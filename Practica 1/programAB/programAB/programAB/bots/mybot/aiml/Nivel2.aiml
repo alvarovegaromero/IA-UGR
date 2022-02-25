@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<aiml>
+<!-- NVL 2 -->
+
+<category>
+	<pattern> LIBRE * </pattern> 
+	<template>
+
+	<think>
+		<set var="horas_libres"> <srai> HORASLIBRES <star index="1"></star> </srai> </set>
+	</think>
+
+
+	<condition var="horas_libres">
+		<li value="EMPTYLIST">NO</li>
+		<li>SI</li>
+	</condition>
+
+	</template>
+</category>
+
+<!-- Regla 1 - HORASLIBRES que acepte: HOY/MANYANA o un dia -->
+<category>
+	<pattern> HORASLIBRES (EL) (PROXIMO) (SIGUIENTE) (ELPROXIMO) * (A) (POR) (PARTIR) (LA) (DE) (LAS) ^ </pattern> 
+	<template>
+
+		<think>
+
+		<set var="dia"><star index="1"></star></set>
+		<star index="2"></star>
+
+		<condition var="dia"> <!-- seleccionar día en especifico -->
+			<li value="hoy"> <set var="cadena_fecha"> <srai> DATE ON <srai> DAY </srai> </srai> </set> </li>
+			<li value="manyana"> <set var="cadena_fecha"> <srai> DATE ON <srai> TOMORROW </srai> </srai> </set> </li>
+			<li value="pasado"> <set var="cadena_fecha"> <srai> DATE ON <srai> DAY AFTER TOMORROW </srai> </srai> </set> </li> <!-- PASADO manyana -->
+			<li> <set var="cadena_fecha"> <srai> DATE ON <get var="dia"></get> </srai> </set> </li>
+		</condition>
+
+		<set var="caracteres_cadena_fecha"> <srai> DELETREA <get var="cadena_fecha"></get> </srai> </set> <!-- parche para pasar de 9 a 09 -->
+			<set var="primer_caracter"> <srai> TOP <get var="caracteres_cadena_fecha"></get> </srai> </set>
+			<set var="segundo_caracter"> <srai> SELECTITEM 2 IN <get var="caracteres_cadena_fecha"></get> </srai> </set> 
+
+			<condition var="primer_caracter"> 
+				<li value="0"></li>
+				<li value="1">
+					<condition var="segundo_caracter">
+						<li value="0"> </li>
+						<li value="1"> </li>
+						<li value="2"> </li>
+						<li value="3"> </li>
+						<li value="4"> </li>						
+						<li value="5"> </li>
+						<li value="6"> </li>
+						<li value="7"> </li>
+						<li value="8"> </li>
+						<li value="9"> </li>
+						<li> <set var="cadena_fecha"> 0<get var="cadena_fecha"> </get> </set> </li>
+					</condition>
+				</li>
+
+				<li value="2">
+					<condition var="segundo_caracter">
+						<li value="0"> </li>
+						<li value="1"> </li>
+						<li value="2"> </li>
+						<li value="3"> </li>
+						<li value="4"> </li>						
+						<li value="5"> </li>
+						<li value="6"> </li>
+						<li value="7"> </li>
+						<li value="8"> </li>
+						<li value="9"> </li>
+						<li> <set var="cadena_fecha"> 0<get var="cadena_fecha"> </get> </set> </li>
+					</condition>
+				</li>
+
+				<li value="3">
+					<condition var="segundo_caracter">
+						<li value="0"> </li>
+						<li value="1"> </li>
+						<li> <set var="cadena_fecha"> 0<get var="cadena_fecha"> </get> </set> </li>
+					</condition>
+				</li>
+
+				<li> <set var="cadena_fecha"> 0<get var="cadena_fecha"> </get> </set> </li>
+			</condition>
+
+		<set var="dia"> <srai> SELECTITEM 1 IN <get var="cadena_fecha"></get> </srai> </set>
+		<set var="mes"> <srai> SELECTITEM 2 IN <get var="cadena_fecha"></get> </srai> </set>
+		<set var="anyo"> <srai> SELECTITEM 3 IN <get var="cadena_fecha"></get> </srai> </set>
+
+		<set var="fecha"> <get var="dia"></get>_<map name="corresp_meses"><get var="mes"></get></map>_<get var="anyo"></get> </set>
+		<set var="parte_del_dia"> <srai> SELECTITEM <srai> COUNT <star index="2"></star> </srai> IN <star index="2"></star> </srai> </set>
+	
+	        <condition var="parte_del_dia">
+	            <li value="UNKNOWN">
+	                <set var="horas">08:00 09:00 10:00 11:00 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00</set>
+	            </li>
+	            <li value="MANYANA">
+	                <set var="horas">08:00 09:00 10:00 11:00 12:00</set>
+	            </li>
+	            <li value="TARDE">
+	                <set var="horas">13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00</set>
+	            </li>
+	            <li>
+	                <set var="horas"> <srai> A PARTIR DE <get var="parte_del_dia"></get> </srai> </set>
+	            </li>
+	        </condition>
+
+	    <set name="momento_dia"> <get var="parte_del_dia"></get> </set> <!-- recordar momento del día para el metodo cita -->
+		<set name="fecha"> <get var="dia"></get> <get var="mes"></get> <get var="anyo"></get> </set>
+
+	    </think>
+
+        <srai> HORAS LIBRES EN EL DIA <get var="fecha"></get> A LAS HORAS <get var="horas"></get> </srai>
+
+	</template>
+</category>
+
+<!-- Regla 1.1 - HORASLIBRES cuando es SOLO PASADO MANYANA ya que si nos haria pasado manyana por la manyana -->
+<category>
+	<pattern> HORASLIBRES PASADO MANYANA </pattern> 
+	<template>
+        <srai> HORASLIBRES PASADO </srai>
+	</template>
+</category>
+
+<!-- Regla 2 - ADAPTAMOS METODO DE NVL1 PARA DISTINTOS FORMATOS al añadir fecha -->
+<category>
+	<pattern> HORASLIBRES (EL) (DIA) <set>number</set> de * del <set>number</set> (A) (POR) ^ (LAS) (LA) ^ </pattern>
+	<template>
+		
+	<think>
+
+	<set var="fecha"> <star index="1"></star>_<map name="corresp_meses"><star index="2"></star></map>_<star index="3"></star></set>
+	<set var="parte_del_dia"> <srai> SELECTITEM <srai> COUNT <star index="5"></star> </srai> IN <star index="5"></star> </srai> </set>
+
+		<condition var="parte_del_dia">
+			<li value="UNKNOWN">
+				<set var="horas">08:00 09:00 10:00 11:00 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00</set>
+			</li>
+			<li value="MANYANA">
+				<set var="horas">08:00 09:00 10:00 11:00 12:00</set>
+			</li>
+			<li value="TARDE">
+				<set var="horas">13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00</set>
+			</li>
+			<li>
+				<set var="horas"> <srai> A PARTIR DE <get var="parte_del_dia"></get> </srai> </set>
+			</li>	
+		</condition>
+
+	<set name="momento_dia"> <get var="parte_del_dia"></get> </set> <!-- recordar momento del día para el metodo cita -->
+    <set name="fecha"> <star index="1"></star> <star index="2"></star> <star index="3"></star> </set> <!-- supongo que no hace falta parche 2 digitos -->
+    
+	</think>
+
+	<srai> HORAS LIBRES EN EL DIA <get var="fecha"></get> A LAS HORAS <get var="horas"></get> </srai>
+
+	</template>
+</category>
+
+<category>
+	<pattern> * cita (para) * </pattern> 
+	<template>
+
+		Muy bien, voy a comprobarlo. Espere un segundo
+
+		<think>
+			<set var="disponible"><srai>LIBRE <star index="2"></star> </srai> </set>
+		</think>	
+
+		<condition var="disponible">
+			<li value="SI">
+
+		<think>
+			<set var="horas_libres"> <srai> HORASLIBRES <star index="2"></star> </srai> </set>
+			<set var="parte_del_dia"> <get name="momento_dia"></get> </set>
+			<set name="horas_libres" > <get var="horas_libres"></get> </set>
+			<set var="tam_list_hl"><srai> COUNT <get var="horas_libres"></get> </srai></set>
+
+			<condition var="parte_del_dia">
+			<li value="UNKNOWN"> <!-- todo el dia -->
+
+				<set var="dia"> <srai> TOP <get name="fecha"/> </srai> </set>
+				<set var="mes"> <srai> SELECTITEM 2 IN <get name="fecha"/> </srai> </set>
+				<set var="anyo"> <srai> SELECTITEM 3 IN <get name="fecha"/> </srai> </set>
+
+				<set var="lista_horas_manyana"><srai> HORASLIBRES <get var="dia"></get> de <get var="mes"></get> del <get var="anyo"></get> POR LA MANYANA </srai></set>
+				<set var="lista_horas_tarde"><srai> HORASLIBRES <get var="dia"></get> de <get var="mes"></get> del <get var="anyo"></get> POR LA TARDE </srai></set>
+
+				<set var="tam_list_manyana"><srai> COUNT <get var="lista_horas_manyana"></get> </srai></set>
+				<set var="tam_list_tarde"><srai> COUNT <get var="lista_horas_tarde"></get> </srai></set>
+
+				<condition var="tam_list_manyana">
+					<li value="5">
+						<set var="mensaje"> la manyana la tengo libre </set>
+					</li>
+					<li>
+						<condition var="lista_horas_manyana">
+							<li value="EMPTYLIST"> <set var="mensaje"> la manyana la tengo ocupada </set> </li>
+							<li> <set var="mensaje"> por la mañana tengo los siguientes huecos libres <get var="lista_horas_manyana"></get> </set> </li>
+						</condition>	
+					</li>
+				</condition>
+
+				<condition var="tam_list_tarde">
+					<li value="8">
+						<set var="mensaje"> <get var="mensaje"></get> y la tarde la tengo libre </set>
+					</li>
+					<li>
+						<condition var="lista_horas_tarde">
+							<li value="EMPTYLIST"> <set var="mensaje"> <get var="mensaje"></get> y la tarde la tengo ocupada </set> </li>
+							<li> <set var="mensaje"> <get var="mensaje"></get> y por la tarde tengo los siguientes huecos libres <get var="lista_horas_tarde"></get> </set> </li>
+						</condition>	
+					</li>
+				</condition>
+
+			</li>
+			<li value="MANYANA"> <!-- por la manyana -->
+				<condition var="tam_list_hl">
+					<li value="5">
+						<set var="mensaje"> la manyana la tengo libre </set>
+					</li>
+					<li value="EMPTYLIST">
+						<set var="mensaje"> la manyana la tengo ocupada </set>
+					</li>
+					<li>
+						<set var="mensaje"> por la mañana tengo los siguientes huecos libres <get var="horas_libres"></get> </set>
+					</li>
+				</condition>
+
+			</li>
+			<li value="TARDE"> <!-- por la tarde -->
+				<condition var="tam_list_hl">
+					<li value="8">
+						<set var="mensaje"> la tarde la tengo libre </set>
+					</li>
+					<li value="EMPTYLIST">
+						<set var="mensaje"> la tarde la tengo ocupada </set>
+					</li>
+					<li>
+						<set var="mensaje"> por la tarde tengo los siguientes huecos libres <get var="horas_libres"></get> </set>
+					</li>
+				</condition>
+
+			</li>
+			<li> <!-- a partir de una hora -->
+				<set var="mensaje"> tengo los siguientes huecos libres: <get var="horas_libres"></get></set>
+			</li>	
+			</condition>
+		</think>	
+
+			Pues <get var="mensaje"></get>
+			¿Quiere alguna hora en concreto?
+
+			<!-- aqui hemos establecido la fecha al llamar a horas_libres -->
+
+			</li>
+			<li value="NO"> Lo siento no puedo está ocupado, ¿desea otro día? </li>
+		</condition>
+
+		<think>
+			<set name="topic">cita</set>
+		</think>
+
+	</template>
+</category>
+
+<topic name = "cita">
+	<category>
+		<pattern> SI </pattern>
+		<template>
+			Muy bien, ¿que día le gustaría? (usa la misma sintaxis que antes)
+		</template>
+	</category>
+
+	<category>
+		<pattern> NO </pattern>
+		<template>
+			Perfecto, que pases un buen día.
+
+			<think>
+				<set name="topic">unknown</set>
+			</think>
+
+		</template>
+	</category>
+
+	<category>
+		<pattern> Me da igual </pattern>
+		<template>
+			<think>
+				<set var="dia"> <srai> TOP <get name="fecha"/> </srai> </set>
+				<set var="mes"> <srai> SELECTITEM 2 IN <get name="fecha"/> </srai> </set>
+				<set var="anyo"> <srai> SELECTITEM 3 IN <get name="fecha"/> </srai> </set>
+
+				<set var="fecha"> <srai> TOP <get name="fecha"/></srai>_<map name="corresp_meses"><srai> SELECTITEM 2 IN <get name="fecha"/> </srai></map>_<srai> SELECTITEM 3 IN <get name="fecha"/> </srai> </set> 
+
+				<set var="momento_dia"> <get name="momento_dia"></get> </set>
+				<set var="lista_horas"> <get name="horas_libres"></get> </set>
+			</think>
+
+				Se ha puesto la cita a las <srai> TOP <get var="lista_horas"></get> </srai> del <get var="fecha"></get>
+                <srai>MARK NOLIBRE AT <srai> TOP <get var="lista_horas"></get> </srai> ON <get var="fecha"/> </srai>
+
+
+            <think>
+				<set name="topic">unknown</set>
+			</think>
+
+		</template>
+	</category>
+
+	<category>
+		<pattern> (Si) a las * </pattern>
+		<template>
+
+		<think>	
+			<set var="dia"> <srai> TOP <get name="fecha"/> </srai> </set>
+			<set var="mes"> <srai> SELECTITEM 2 IN <get name="fecha"/> </srai> </set>
+			<set var="anyo"> <srai> SELECTITEM 3 IN <get name="fecha"/> </srai> </set>
+
+			<set var="fecha"> <srai> TOP <get name="fecha"/></srai>_<map name="corresp_meses"><srai> SELECTITEM 2 IN <get name="fecha"/> </srai></map>_<srai> SELECTITEM 3 IN <get name="fecha"/> </srai> </set>
+
+			<set var="esta_libre"> <srai> IS BUSY DAY <get var="fecha"></get> AT <star index="1"></star> </srai> </set>
+
+		</think>
+
+			<condition var ="esta_libre">
+				<li value="false">    
+					<srai>MARK NOLIBRE AT <star index="1"></star> ON <get var="fecha"></get> </srai>
+
+					Perfecto, la cita se ha inscrito con éxito a las <star index="1"></star> del <get var="fecha"></get>
+
+				<think>
+					<set name="topic">unknown</set>
+				</think>
+
+				</li>
+				<li>
+					ERROR - Has introducido una hora ocupada/incorrecta o en formato incorrecto HH:MM
+				</li>
+			</condition>
+
+		</template>
+	</category>
+</topic>
+
+
+<category>
+	<pattern> A PARTIR DE *</pattern> <!-- Devuelve una lista de horas hasta las 20:00 desde una hora -->
+	<template>
+		<think>
+
+		<set var="hora"> <star index="1"></star> </set>
+
+		<condition var="hora">
+			<li value="08:00"> <set var="lista_horas"> 08:00 09:00 10:00 11:00 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="09:00"> <set var="lista_horas"> 09:00 10:00 11:00 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="10:00"> <set var="lista_horas"> 10:00 11:00 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="11:00"> <set var="lista_horas"> 11:00 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="12:00"> <set var="lista_horas"> 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="13:00"> <set var="lista_horas"> 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="14:00"> <set var="lista_horas"> 14:00 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="15:00"> <set var="lista_horas"> 15:00 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="16:00"> <set var="lista_horas"> 16:00 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="17:00"> <set var="lista_horas"> 17:00 18:00 19:00 20:00 </set> </li>
+			<li value="18:00"> <set var="lista_horas"> 18:00 19:00 20:00 </set> </li>
+			<li value="19:00"> <set var="lista_horas"> 19:00 20:00 </set> </li>
+			<li value="20:00"> <set var="lista_horas"> 20:00 </set> </li>
+		</condition>	
+		</think>
+
+		<get var="lista_horas"></get>
+	</template>
+</category>
+
+</aiml>

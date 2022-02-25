@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<aiml>
+<!-- File: Nivel0.aiml -->
+<!-- Author: Álvaro Vega Romero -->
+
+<!-- 1 -->
+<!-- Regla 0 -->
+<category><pattern>* estacion *</pattern>
+<template>Estamos en <srai>SEASON</srai></template>
+</category>
+
+<!-- Regla 1 -->
+<category><pattern>* epoca del anyo *</pattern>
+<template>Estamos en <srai>SEASON</srai></template>
+</category>
+
+<!-- 2 -->
+<!-- Regla 2 -->
+<category><pattern>* [fase momento parte] * dia *</pattern>
+<template>Estamos en la <srai>DAY PHASE</srai></template>
+</category>
+
+<!-- 3 -->
+<!-- Regla 3 -->
+<!-- "hoy/manyana/pasado manyana va al inicio" -->
+<category><pattern>* que dia ^ es</pattern>
+<template>
+    <think> <set var="dia" > <star index="1"/></set> </think>
+    <condition var="dia">
+        <li value="manyana"> <get var="dia"/> es <srai>TOMORROW</srai> </li>
+        <li value="hoy"> <get var="dia"/> es <srai>DAY</srai> </li>
+        <li value="pasado manyana"> <get var="dia"/> es <srai>DAY AFTER TOMORROW</srai> </li>
+    </condition>
+</template>
+</category>
+
+<!-- Regla 4 -->
+<!-- "hoy/manyana/pasado manyana va al final" -->
+<category><pattern>^ dia ^ es *</pattern>
+<template>
+  	<think> <set var="dia" > <star index="3"/></set> </think>
+  	<srai>  <get var="dia"> </get> QUE DIA ^ ES </srai>
+</template>
+</category>
+
+<!-- 4 -->
+<!-- Regla 5 -->
+<category><pattern>* una semana ^</pattern>
+<template>
+  	Dentro de una semana será <srai> DATE A WEEK FROM <srai> DAY </srai> </srai>
+</template>
+</category>
+
+<!-- 5 -->
+<!-- Regla 6 -->
+<!-- "día de la semana va al final" -->
+<category><pattern>* fecha * [proximo siguiente] * </pattern>
+<template>
+	<think> <set var="dia" > <star index="3"/> </set> </think>
+	<think> <set var="dias"> <srai> DAYS UNTIL <get var="dia"> </get></srai> </set> </think>
+
+	<think>
+
+	<condition var="dias"> <!-- por si es el mismo dia -->
+		<li value="0"> <set var="dias"> 7 </set> </li>
+	</condition>
+
+	</think>
+
+	El proximo <get var="dia"> </get> será <srai> DATE IN <get var="dias"> </get> DAYS </srai>
+	</template>
+</category>
+
+<!-- Regla 7 -->
+<!-- "día de la semana va al principio" -->
+<category><pattern> * [proximo siguiente] * que fecha * </pattern>
+<template>
+	<think> <set var="dia" > <star index="2"/> </set> </think>
+	<srai> QUE FECHA ES EL PROXIMO <get var="dia"> </get> </srai>
+</template>
+</category>
+
+</aiml>
